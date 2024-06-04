@@ -4,14 +4,14 @@ import { Link } from 'react-router-dom';
 
 const HomePage = () => {
   return (
-    <Container 
-      maxWidth="md" 
+    <Container
+      maxWidth="md"
       sx={{
-        display: 'flex', 
-        flexDirection: 'column', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '80vh', 
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '80vh',
         textAlign: 'center'
       }}
     >

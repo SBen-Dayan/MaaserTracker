@@ -1,8 +1,18 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { Container, Typography, Box, Paper } from '@mui/material';
+import axios from 'axios';
 
 const OverviewPage = () => {
-  return (
+  const [overview, setOverview] = useState(null);
+
+  useEffect(() => {
+    (async function () {
+      const { data } = await axios.get('/api/overview/get');
+      setOverview(data);
+    })();
+  }, [])
+
+  return overview &&
     <Container
       maxWidth="md"
       sx={{
@@ -11,7 +21,8 @@ const OverviewPage = () => {
         justifyContent: 'center',
         alignItems: 'center',
         height: '80vh',
-        textAlign: 'center'
+        textAlign: 'center',
+        marginTop: 15
       }}
     >
       <Paper elevation={3} sx={{ padding: '120px', borderRadius: '15px' }}>
@@ -20,23 +31,22 @@ const OverviewPage = () => {
         </Typography>
         <Box sx={{ marginBottom: '20px' }}>
           <Typography variant="h5" gutterBottom>
-            Total Income: $5000
+            Total Income: ${overview.totalIncome.toFixed(2)}
           </Typography>
           <Typography variant="h5" gutterBottom>
-            Total Maaser: $500
+            Total Maaser: ${overview.totalMaaser.toFixed(2)}
           </Typography>
         </Box>
         <Box>
           <Typography variant="h5" gutterBottom>
-            Maaser Obligated: $500
+            Maaser Obligated: ${overview.maaserObligated.toFixed(2)}
           </Typography>
           <Typography variant="h5" gutterBottom>
-            Remaining Maaser obligation: $0
+            Remaining Maaser obligation: ${overview.remainingObligation > 0 ? overview.remainingObligation.toFixed(2) : 0}
           </Typography>
         </Box>
       </Paper>
     </Container>
-  );
 }
 
 export default OverviewPage;

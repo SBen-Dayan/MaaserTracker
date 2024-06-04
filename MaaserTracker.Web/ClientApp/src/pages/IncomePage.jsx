@@ -1,41 +1,31 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Checkbox, Container, FormControlLabel, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
+import axios from 'axios';
 
-const incomes = [
-  { id: 1, source: 'Job', amount: 5000, date: '2023-06-13' },
-  { id: 2, source: 'Gift', amount: 300, date: '2023-06-11' },
-  { id: 3, source: 'Job', amount: 2500, date: '2023-06-11' },
-  { id: 4, source: 'Investments', amount: 1000, date: '2023-06-10' }
-]
-
-const groupedIncomes = [
-  {
-    source: "Job",
-    incomes:
-      [
-        { id: 1, source: "Job", amount: 5000, date: "2023-06-13" },
-        { id: 3, source: "Job", amount: 2500, date: "2023-06-11" }
-      ]
-  },
-  {
-    source: "Gift",
-    incomes:
-      [
-        { id: 2, source: "Gift", amount: 300, date: "2023-06-11" }
-      ]
-  },
-  {
-    source: "Investments",
-    incomes:
-      [
-        { id: 4, source: "Investments", amount: 1000, date: "2023-06-10" }
-      ]
-  }
-]
+const groupIncomes = incomes => {
+  const uniqueSources = [];
+  const result = {};
+  incomes.forEach(({ id, amount, date, incomeSource: { source } }) => {
+    if (!uniqueSources.includes(source)) {
+      uniqueSources.push(source);
+      result[source] = [{ id, source: source, amount, date }];
+    } else {
+      result[source] = [...result[source], { id, source: source, amount, date }];
+    }
+  })
+  return result;
+}
 
 const IncomePage = () => {
-
   const [groupBySource, setGroupBySource] = useState(false);
+  const [incomes, setIncomes] = useState([]);
+
+  useEffect(() => {
+    (async function () {
+      const { data } = await axios.get('/api/income/getAll');
+      setIncomes(data);
+    })();
+  }, [])
 
   return (
     <Container sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 3 }}>
@@ -66,23 +56,23 @@ const IncomePage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {incomes.map((income) => (
-                <TableRow key={income.id}>
+              {incomes.map(({ id, amount, date, incomeSource }) => (
+                <TableRow key={id}>
                   <TableCell component="th" scope="row" sx={{ fontSize: '18px' }}>
-                    {income.source}
+                    {incomeSource.source}
                   </TableCell>
-                  <TableCell align="right" sx={{ fontSize: '18px' }}>${income.amount}</TableCell>
-                  <TableCell align="right" sx={{ fontSize: '18px' }}>{income.date}</TableCell>
+                  <TableCell align="right" sx={{ fontSize: '18px' }}>${amount}</TableCell>
+                  <TableCell align="right" sx={{ fontSize: '18px' }}>{date}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
       ) : (
-        groupedIncomes.map(({ source, incomes }) => (
-          <div key={source} sx={{ width: '80%', maxWidth: '80%' }}>
+        Object.entries(groupIncomes(incomes)).map(([key, incomeValues]) => {
+          return <div key={key} sx={{ width: '80%', maxWidth: '80%' }}>
             <Typography variant="h5" gutterBottom component="div" sx={{ mt: 5 }}>
-              {source}
+              {key}
             </Typography>
             <TableContainer component={Paper}>
               <Table sx={{ minWidth: 650 }}>
@@ -94,20 +84,20 @@ const IncomePage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {incomes.map((income) => (
-                    <TableRow key={income.id}>
+                  {incomeValues.map(({ id, amount, date, source }) => (
+                    <TableRow key={id}>
                       <TableCell component="th" scope="row" sx={{ fontSize: '18px' }}>
-                        {income.source}
+                        {source}
                       </TableCell>
-                      <TableCell align="right" sx={{ fontSize: '18px' }}>${income.amount}</TableCell>
-                      <TableCell align="right" sx={{ fontSize: '18px' }}>{income.date}</TableCell>
+                      <TableCell align="right" sx={{ fontSize: '18px' }}>${amount}</TableCell>
+                      <TableCell align="right" sx={{ fontSize: '18px' }}>{date}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TableContainer>
           </div>
-        ))
+        })
       )}
     </Container>
   );

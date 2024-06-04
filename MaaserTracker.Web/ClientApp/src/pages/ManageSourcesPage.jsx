@@ -1,19 +1,28 @@
 import { Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Box } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const ManageSourcesPage = () => {
-  const [sources, setSources] = useState([
-    'Job', 'Gift', 'Savings', 'Investments', 'Other'
-  ]);
+  const [incomeSources, setIncomeSources] = useState([]);
   const [open, setOpen] = useState(false);
+  const [selectedDeleteId, setSelectedDeleteId] = useState(null);
   const [selectedSource, setSelectedSource] = useState('');
   const [editingSource, setEditingSource] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const handleOpen = (source = '') => {
+  useEffect(() => {
+    refreshSources();
+  }, [])
+
+  const refreshSources = async () => {
+    const { data } = await axios.get('/api/incomeSource/getAll');
+    setIncomeSources(data);
+  }
+
+  const handleOpen = (incomeSource = null) => {
     setOpen(true);
-    setSelectedSource(source);
-    setEditingSource(source);
+    setSelectedSource(incomeSource ? incomeSource.source : '');
+    setEditingSource(incomeSource ? incomeSource.id : null);
   };
 
   const handleClose = () => {
@@ -22,20 +31,33 @@ const ManageSourcesPage = () => {
     setEditingSource(null);
   };
 
-  const handleAddEdit = () => {
+  const handleAddEdit = async () => {
     if (editingSource) {
-      setSources(sources.map(source => source === editingSource ? selectedSource : source));
+      await axios.post('/api/incomeSource/edit', { id: +editingSource, source: selectedSource });
+      refreshSources();
     } else {
-      setSources([...sources, selectedSource]);
+      await axios.post('/api/incomeSource/add', { source: selectedSource });
+      refreshSources();
     }
     handleClose();
   };
 
-  const handleDelete = () => {
+  const handleDelete = id => {
+    setSelectedDeleteId(id);
     setConfirmOpen(true);
   };
 
+  const onDeleteClick = async () => {
+    if (!selectedDeleteId) {
+      return;
+    }
+    await axios.post('/api/incomeSource/delete', { id: selectedDeleteId });
+    setIncomeSources(incomeSources.filter(i => i.id !== selectedDeleteId));
+    setConfirmOpen(false);
+  }
+
   const handleConfirmClose = () => {
+    setSelectedDeleteId(null);
     setConfirmOpen(false);
   };
 
@@ -55,12 +77,12 @@ const ManageSourcesPage = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sources.map((source) => (
-              <TableRow key={source}>
-                <TableCell sx={{ fontSize: '18px' }}>{source}</TableCell>
+            {incomeSources.map(incomeSource => (
+              <TableRow key={incomeSource.id}>
+                <TableCell sx={{ fontSize: '18px' }}>{incomeSource.source}</TableCell>
                 <TableCell align="right" sx={{ fontSize: '18px' }}>
-                  <Button color="primary" variant="outlined" sx={{ margin: '0 5px' }} onClick={() => handleOpen(source)}>Edit</Button>
-                  <Button color="secondary" variant="outlined" sx={{ margin: '0 5px' }} onClick={handleDelete}>Delete</Button>
+                  <Button color="primary" variant="outlined" sx={{ margin: '0 5px' }} onClick={() => handleOpen(incomeSource)}>Edit</Button>
+                  <Button color="secondary" variant="outlined" sx={{ margin: '0 5px' }} onClick={() => handleDelete(incomeSource.id)}>Delete</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -82,19 +104,19 @@ const ManageSourcesPage = () => {
         </DialogActions>
       </Dialog>
       <Dialog open={confirmOpen} onClose={handleConfirmClose} fullWidth maxWidth="sm">
-          <DialogTitle>Confirm Deletion</DialogTitle>
-          <DialogContent>
-            This source has some income associated with it, are you sure you want to delete it?
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleConfirmClose} color="primary">
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmClose} color="secondary">
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          This source has some income associated with it, are you sure you want to delete it?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleConfirmClose} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={onDeleteClick} color="secondary">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }
